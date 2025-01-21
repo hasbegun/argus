@@ -11,6 +11,7 @@ RUN rm -f requirements.txt
 
 # Copy the rest of your app code
 COPY ./src .
+RUN rm -f .env
 
 # Expose port 3000 (the port where FastAPI will run)
 EXPOSE 3000
