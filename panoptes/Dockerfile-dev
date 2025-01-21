@@ -1,0 +1,9 @@
+# Use a lightweight Python base image
+FROM innox/fastapi-ollama:latest
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Default command to run the FastAPI app with Uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000", "--reload"]
+# CMD ["/bin/bash"]
