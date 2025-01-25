@@ -40,9 +40,10 @@ class OllamaBase:
                 host=self.ollama_host,
                 headers={'OLLAMA_API_KEY':self.api_key}
             )
-            response = client.chat(model='llama3.2', messages=[{
-                'role': 'user',
-                'content': prompt,
+            response = client.chat(model=model or 'llama3.2',
+                messages=[{
+                    'role': 'user',
+                    'content': prompt,
                 },
             ])
 
@@ -58,23 +59,46 @@ class OllamaBase:
         images: Optional[List[bytes]] = None
     ):
         """
-        Wraps ollama.chat or ollama.generate calls in a single method.
+        Wraps ollama.chat in a single method for image-based queries.
         - 'model': if you want to specify a custom model like 'llama3.2'
-        - 'images': for image-based queries
+        - 'images': raw image bytes (PNG, JPG). Will be converted to Base64 for Ollama.
         """
         if self.api_key is None:
             self._check_api_key()
+
+        # Convert raw image bytes to Base64 strings
+        encoded_images = []
+        if images:
+            for img_bytes in images:
+                encoded_str = base64.b64encode(img_bytes).decode('utf-8')
+                encoded_images.append(encoded_str)
 
         try:
             response = ollama.chat(
                 prompt=prompt,
                 model=model,
-                images=images,
+                images=encoded_images,
                 base_url=self.ollama_host,
                 api_key=self.api_key
             )
-
             return response
         except Exception as exc:
             print(f"Error communicating with Ollama: {exc}")
-            raise HTTPException(status_code=500, detail="Failed to communicate with Ollama")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to communicate with Ollama"
+            )
+
+        # try:
+        #     response = ollama.chat(
+        #         prompt=prompt,
+        #         model=model,
+        #         images=images,
+        #         base_url=self.ollama_host,
+        #         api_key=self.api_key
+        #     )
+
+        #     return response
+        # except Exception as exc:
+        #     print(f"Error communicating with Ollama: {exc}")
+        #     raise HTTPException(status_code=500, detail="Failed to communicate with Ollama")
