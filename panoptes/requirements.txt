@@ -4,3 +4,4 @@ requests
 python-dotenv
 ollama
 pytest
+python-multipart

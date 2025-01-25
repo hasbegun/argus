@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from fastapi import HTTPException
 import ollama
+import base64
 
 class OllamaBase:
     def __init__(self, ollama_host:str, api_key: str):
@@ -58,36 +59,58 @@ class OllamaBase:
         model: Optional[str] = "llava:latest",
         images: Optional[List[bytes]] = None
     ):
-        """
-        Wraps ollama.chat in a single method for image-based queries.
-        - 'model': if you want to specify a custom model like 'llama3.2'
-        - 'images': raw image bytes (PNG, JPG). Will be converted to Base64 for Ollama.
-        """
-        if self.api_key is None:
-            self._check_api_key()
-
-        # Convert raw image bytes to Base64 strings
         encoded_images = []
         if images:
             for img_bytes in images:
                 encoded_str = base64.b64encode(img_bytes).decode('utf-8')
                 encoded_images.append(encoded_str)
 
-        try:
-            response = ollama.chat(
-                prompt=prompt,
-                model=model,
-                images=encoded_images,
-                base_url=self.ollama_host,
-                api_key=self.api_key
-            )
-            return response
-        except Exception as exc:
-            print(f"Error communicating with Ollama: {exc}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to communicate with Ollama"
-            )
+        response = ollama.chat(
+            prompt=prompt,
+            model=model,
+            images=encoded_images,
+            base_url=self.ollama_host,
+            api_key=self.api_key
+        )
+        return response
+
+
+    # def _call_imagea_analysis(
+    #     self,
+    #     prompt: str,
+    #     model: Optional[str] = "llava:latest",
+    #     images: Optional[List[bytes]] = None
+    # ):
+    #     """
+    #     Wraps ollama.chat in a single method for image-based queries.
+    #     - 'model': if you want to specify a custom model like 'llama3.2'
+    #     - 'images': raw image bytes (PNG, JPG). Will be converted to Base64 for Ollama.
+    #     """
+    #     if self.api_key is None:
+    #         self._check_api_key()
+
+    #     # Convert raw image bytes to Base64 strings
+    #     encoded_images = []
+    #     if images:
+    #         for img_bytes in images:
+    #             encoded_str = base64.b64encode(img_bytes).decode('utf-8')
+    #             encoded_images.append(encoded_str)
+
+    #     try:
+    #         response = ollama.chat(
+    #             prompt=prompt,
+    #             model=model,
+    #             images=encoded_images,
+    #             base_url=self.ollama_host,
+    #             api_key=self.api_key
+    #         )
+    #         return response
+    #     except Exception as exc:
+    #         print(f"Error communicating with Ollama: {exc}")
+    #         raise HTTPException(
+    #             status_code=500,
+    #             detail="Failed to communicate with Ollama"
+    #         )
 
         # try:
         #     response = ollama.chat(
