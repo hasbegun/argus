@@ -15,16 +15,6 @@ from validations import ChatRequest, ImageAnalysisRequest
 
 router = APIRouter()
 
-STORAGE_DIR = "./store"
-os.makedirs(STORAGE_DIR, exist_ok=True)
-
-LOG_FILE = "./upload_log.json"
-if not os.path.exists(LOG_FILE):
-    with open(LOG_FILE, "w") as f:
-        json.dump([], f)
-
-
-
 class ChatAPI(OllamaBase):
     """
     A class to group Chat-related endpoints.

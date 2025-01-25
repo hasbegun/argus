@@ -4,12 +4,14 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 
 from chat_api import ChatAPI, router
+from bootstrap import prep
 
 
 load_dotenv()
 OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", "")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
+prep()
 app = FastAPI()
 
 # Create an instance of our ChatAPI, passing in the global API key
