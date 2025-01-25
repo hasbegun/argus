@@ -1,28 +1,28 @@
 import base64
 import os
+import uuid
+import json
 from typing import List, Optional
 import shutil
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 
-from pydantic import BaseModel
-
 
 from ollama_base import OllamaBase
+from util import compute_file_hash
+from validations import ChatRequest, ImageAnalysisRequest
 
 router = APIRouter()
 
 STORAGE_DIR = "./store"
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
-# Pydantic models for requests
-class ChatRequest(BaseModel):
-    prompt: str
+LOG_FILE = "./upload_log.json"
+if not os.path.exists(LOG_FILE):
+    with open(LOG_FILE, "w") as f:
+        json.dump([], f)
 
-class ImageAnalysisRequest(BaseModel):
-    image: str
-    prompt: str = "Describe the image."
 
 
 class ChatAPI(OllamaBase):
@@ -37,6 +37,7 @@ class ChatAPI(OllamaBase):
         # Register endpoints with the router
         router.post("/api/chat")(self.chat_endpoint)
         router.post("/api/image-analysis")(self.image_analysis_endpoint)
+        router.post("/api/upload")(self.upload)
 
     # Endpoint 1: /api/chat
     def chat_endpoint(self, request_data: ChatRequest):
@@ -45,20 +46,24 @@ class ChatAPI(OllamaBase):
         response = self._call_ollama_chat(prompt=request_data.prompt)
         return {"success": True, "data": response}
 
-    # Endpoint 2: /api/image-analysis
-    async def image_analysis_endpoint(self, image: UploadFile = File(...)):
+    # Endpoint 2: /api/upload
+    async def upload(self, image: UploadFile = File(...)):
         if not (image.content_type == "image/jpeg" or image.content_type == "image/png"):
             raise HTTPException(
                 status_code=400,
                 detail="Invalid file type. Only JPEG and PNG files are allowed."
             )
 
-        # Determine the storage path
-        file_path = os.path.join(STORAGE_DIR, image.filename)
+        # Load the current log
+        with open(LOG_FILE, "r") as log_file:
+            log_data = json.load(log_file)
+
+        # Save the uploaded file to a temporary location
+        temp_file_path = os.path.join(STORAGE_DIR, f"temp_{uuid.uuid4()}")
 
         try:
             # Open the destination file in binary write mode
-            with open(file_path, "wb") as f:
+            with open(temp_file_path, "wb") as f:
                 # Read and write the file in chunks
                 while chunk := await image.read(1024 * 1024):  # 1 MB chunks
                     f.write(chunk)
@@ -67,6 +72,38 @@ class ChatAPI(OllamaBase):
                 status_code=500,
                 detail=f"An error occurred while saving the file: {str(e)}"
             )
+
+        # Compute the hash of the uploaded file
+        file_hash = compute_file_hash(temp_file_path)
+
+        # Check for duplicates in the log
+        for entry in log_data:
+            if entry["hash"] == file_hash:
+                # Delete the temporary file and return the existing file info
+                os.remove(temp_file_path)
+                return {
+                    "message": "Duplicate file detected. Pointing to existing file.",
+                    "existing_file": entry
+                }
+
+        # Generate a UUID-based filename for storage
+        stored_filename = f"{uuid.uuid4()}"
+        stored_file_path = os.path.join(STORAGE_DIR, stored_filename)
+        os.rename(temp_file_path, stored_file_path)
+
+        # Log the new file upload
+        new_entry = {
+            "original_filename": image.filename,
+            "file_type": image.content_type,
+            "hash": file_hash,
+            "stored_filename": stored_filename
+        }
+        log_data.append(new_entry)
+
+        log_data.append(new_entry)
+        with open(LOG_FILE, "w") as log_file:
+            json.dump(log_data, log_file, indent=4)
+
         return {"message": "File uploaded successfully", "filename": image.filename}
 
         # # Read the image file from the request
