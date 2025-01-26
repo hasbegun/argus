@@ -53,7 +53,7 @@ class OllamaBase:
             print(f"Error communicating with Ollama: {exc}")
             raise HTTPException(status_code=500, detail="Failed to communicate with Ollama")
 
-    def _call_imagea_analysis(
+    def _call_image_analysis(
         self,
         prompt: str,
         model: Optional[str] = "llava:latest",
@@ -65,14 +65,47 @@ class OllamaBase:
                 encoded_str = base64.b64encode(img_bytes).decode('utf-8')
                 encoded_images.append(encoded_str)
 
-        response = ollama.chat(
-            prompt=prompt,
-            model=model,
-            images=encoded_images,
-            base_url=self.ollama_host,
-            api_key=self.api_key
-        )
-        return response
+        payload = [{
+            'model': model,
+            'content': prompt,
+        }]
+
+        if encoded_images:
+            payload["images"] = encoded_images
+
+        try:
+            # response = ollama.chat(
+            #     model=model,
+            #     prompt=prompt,
+            #     images=encoded_images,
+            #     base_url=self.ollama_host,
+            #     api_key=self.api_key
+            # )
+            # response = ollama.chat(
+            #     base_url=self.ollama_host,
+            #     api_key=self.api_key,
+            #     **payload
+            # )
+            response = self._call_imagea_analysis(
+                prompt=prompt,
+                images=[image_bytes]
+            )
+            return response
+        except Exception as e:
+            print(f"Error communicating with Ollama: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to communicate with Ollama"
+            )
+
+        # response = ollama.chat(
+        #     prompt=prompt,
+        #     model=model,
+        #     images=encoded_images,
+        #     base_url=self.ollama_host,
+        #     api_key=self.api_key
+        # )
+        # return response
 
 
     # def _call_imagea_analysis(

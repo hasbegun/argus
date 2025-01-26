@@ -4,6 +4,9 @@ from pydantic import BaseModel
 class ChatRequest(BaseModel):
     prompt: str
 
+class UploadRequest(BaseModel):
+    image: str
+
 class ImageAnalysisRequest(BaseModel):
     image: str
     prompt: str = "Describe the image."
