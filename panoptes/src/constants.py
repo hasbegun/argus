@@ -1,6 +1,5 @@
 STORAGE_DIR = "./store"
 LOG_FILE = "./upload_log.json"
-
 SUPPORTED_IMAGE_TYPES = ["image/jpeg",
                          "image/png",
                          "image/bmp",

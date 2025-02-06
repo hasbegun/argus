@@ -46,12 +46,20 @@ class ChatAPI(OllamaBase):
                 detail="Invalid file type. JPEG, PNG, BMP, GIF, MP4, and AVI files are allowed."
             )
 
+        original_filename = file.filename
+        file_extension = os.path.splitext(original_filename)[1]
+        if not file_extension:
+            raise HTTPException(
+                status_code=400,
+                detail="Uploaded file does not have a valid extension."
+        )
+
         # Load the current log
         with open(LOG_FILE, "r") as log_file:
             log_data = json.load(log_file)
 
         # Save the uploaded file to a temporary location
-        temp_file_path = os.path.join(STORAGE_DIR, f"temp_{uuid.uuid4()}")
+        temp_file_path = os.path.join(STORAGE_DIR, f"temp_{uuid.uuid4()}{file_extension}")
 
         try:
             # Open the destination file in binary write mode
@@ -79,13 +87,13 @@ class ChatAPI(OllamaBase):
                 }
 
         # Generate a UUID-based filename for storage
-        stored_filename = uuid.uuid4().hex
+        stored_filename = f"{uuid.uuid4().hex}{file_extension}"
         stored_file_path = os.path.join(STORAGE_DIR, stored_filename)
         os.rename(temp_file_path, stored_file_path)
 
         # Log the new file upload
         new_entry = {
-            "original_filename": file.filename,
+            "original_filename": original_filename,
             "file_type": file.content_type,
             "hash": file_hash,
             "stored_filename": stored_filename
@@ -113,26 +121,13 @@ class ChatAPI(OllamaBase):
         # Retrieve the stored file path
         stored_filename = upload_response.get("filename").get('stored_filename')
         stored_file_path = os.path.join(STORAGE_DIR, stored_filename)
-        print(f'>> {stored_file_path}')
 
-        # Read the stored file as bytes
-        # FIXME: file io is expensive process.
-        # Find a way to share the memory in upload process. It is alreay there.
-        try:
-            with open(stored_file_path, "rb") as f:
-                image_bytes = f.read()
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"An error occurred while processing the image: {str(e)}"
-            )
-
-        # print(f'>> {base64_image}')
+        print(f'>> {prompt} - {stored_file_path}')
         # Call the Ollama image analysis service
         try:
             analysis_response = self._call_image_analysis(
                 prompt=prompt,
-                images=[image_bytes]
+                image_path=stored_file_path
             )
         except Exception as e:
             raise HTTPException(
@@ -141,7 +136,7 @@ class ChatAPI(OllamaBase):
             )
 
         return {
-            "message": "Image analysis completed successfully.",
-            "analysis": analysis_response
+            "message": analysis_response,
+            "analysis": 'Done'
         }
 

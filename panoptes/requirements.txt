@@ -5,3 +5,5 @@ python-dotenv
 ollama
 pytest
 python-multipart
+pyjwt
+passlib[bcrypt]
