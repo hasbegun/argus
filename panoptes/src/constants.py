@@ -1,3 +1,5 @@
+from pathlib import Path
+
 STORAGE_DIR = "./store"
 LOG_FILE = "./upload_log.json"
 SUPPORTED_IMAGE_TYPES = ["image/jpeg",
@@ -8,3 +10,5 @@ SUPPORTED_IMAGE_TYPES = ["image/jpeg",
                          "image/webp"]
 SUPPORTED_VIDEO_TYPES = ["video/mp4", "video/x-msvideo"]  # MP4 and AVI
 SUPPORTED_FILE_TYPES = SUPPORTED_IMAGE_TYPES + SUPPORTED_VIDEO_TYPES
+UPLOAD_DIR = Path("uploads")
+FRAMES_DIR = Path("frames")

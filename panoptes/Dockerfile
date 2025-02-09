@@ -1,5 +1,8 @@
 # Use a lightweight Python base image
-FROM python:3.9-slim
+FROM python:3.13-slim
+
+# Add pkgs for opencv2
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y libgl1 libgl1-mesa-glx libglib2.0-0
 
 # Set the working directory in the container
 WORKDIR /app
@@ -18,4 +21,3 @@ EXPOSE 3000
 
 # Default command to run the FastAPI app with Uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"]
-
