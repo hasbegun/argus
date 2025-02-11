@@ -1,0 +1,1 @@
+List<String> allowedFileTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi'];
